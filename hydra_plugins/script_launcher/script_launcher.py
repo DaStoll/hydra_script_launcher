@@ -39,6 +39,7 @@ class LauncherConfig:
     gpus: int = 0
     mem_per_cpu: int = 4000
     job_name: str = "default"
+    partition: str = "???"
 
 
 ConfigStore.instance().store(
@@ -47,7 +48,8 @@ ConfigStore.instance().store(
 
 
 class ScriptLauncher(Launcher):
-    def __init__(self, batch_script_header: str, execute_command: str, pre_execute_command: str, **kwargs) -> None:
+    def __init__(self, batch_script_header: str, execute_command: str, pre_execute_command: str, partition: str,
+                 **kwargs) -> None:
         self.config: Optional[DictConfig] = None
         self.config_loader: Optional[ConfigLoader] = None
         self.task_function: Optional[TaskFunction] = None
@@ -56,6 +58,7 @@ class ScriptLauncher(Launcher):
         self.execute_command = execute_command
         self.batch_script_header = batch_script_header
         self.pre_execute_command = pre_execute_command
+        self.partition = partition
 
     def setup(
         self,
@@ -98,6 +101,6 @@ class ScriptLauncher(Launcher):
         # Submit the batch script
         log.info(f"ScriptLauncher is submitting {len(job_overrides)} jobs")
         try:
-            subprocess.run(["sbatch", batch_script_path])
+            subprocess.run(["sbatch", f"-p {self.partition}", batch_script_path, "--pty bash"])
         except FileNotFoundError:
             raise EnvironmentError("The sbatch command could not be found.")

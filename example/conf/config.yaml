@@ -10,3 +10,4 @@ hydra:
     gpus: 0
     mem_per_cpu: 8000
     job_name: test
+    partition: test
