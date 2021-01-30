@@ -1,0 +1,12 @@
+defaults:
+  - hydra/launcher: script
+
+hydra:
+  launcher:
+    pre_execute_command: source ~/.conda/bin/activate htaa
+    execute_command: python example/my_app.py
+    time: 0-02:00
+    cpus_per_task: 1
+    gpus: 0
+    mem_per_cpu: 8000
+    job_name: test

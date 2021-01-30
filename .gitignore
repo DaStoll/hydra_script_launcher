@@ -1,0 +1,4 @@
+multirun
+*egg-info
+*.idea
+__pycache__
