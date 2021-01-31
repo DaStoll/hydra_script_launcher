@@ -11,3 +11,6 @@ hydra:
     mem_per_cpu: 8000
     job_name: test
     partition: test
+    max_parallel_jobs: 100
+    error: ${hydra.sweep.dir}/cluster_oe/%A_%x_%t.oe
+    output: ${hydra.sweep.dir}/cluster_oe/%A_%x_%t.oe

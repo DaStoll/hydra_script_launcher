@@ -23,7 +23,10 @@ _batch_script_header_default = """#!/bin/bash
 #SBATCH --cpus-per-task ${hydra.launcher.cpus_per_task}
 #SBATCH --gres=gpus:${hydra.launcher.gpus}
 #SBATCH --mem-per-cpu=${hydra.launcher.mem_per_cpu}
-#SBATCH --job-name ${hydra.launcher.job_name}"""
+#SBATCH --job-name ${hydra.launcher.job_name}
+#SBATCH --output ${hydra.launcher.output}
+#SBATCH --error ${hydra.launcher.error}
+"""
 
 
 @dataclass
@@ -40,6 +43,9 @@ class LauncherConfig:
     mem_per_cpu: int = 4000
     job_name: str = "default"
     partition: str = "???"
+    max_parallel_jobs: Optional[int] = None
+    output: str = "default-output-error.oe"
+    error: str = "default-output-error.oe"
 
 
 ConfigStore.instance().store(
@@ -48,7 +54,8 @@ ConfigStore.instance().store(
 
 
 class ScriptLauncher(Launcher):
-    def __init__(self, batch_script_header: str, execute_command: str, pre_execute_command: str, partition: str,
+    def __init__(self, batch_script_header: str, execute_command: Optional[str], pre_execute_command: Optional[str],
+                 partition: str, max_parallel_jobs: Optional[int], output: Optional[str], error: Optional[str],
                  **kwargs) -> None:
         self.config: Optional[DictConfig] = None
         self.config_loader: Optional[ConfigLoader] = None
@@ -59,6 +66,11 @@ class ScriptLauncher(Launcher):
         self.batch_script_header = batch_script_header
         self.pre_execute_command = pre_execute_command
         self.partition = partition
+        self.max_parallel_jobs = max_parallel_jobs
+
+        # Make sure cluster output/error folder exists
+        Path(output).parent.mkdir(parents=True, exist_ok=True)
+        Path(error).parent.mkdir(parents=True, exist_ok=True)
 
     def setup(
         self,
@@ -81,6 +93,13 @@ class ScriptLauncher(Launcher):
         sweep_dir.mkdir(parents=True, exist_ok=True)
         log.info(f"Sweep output dir : {sweep_dir}")
 
+        # Add task array flag to header
+        if self.max_parallel_jobs is None:
+            array_flag = f"#SBATCH --array 0:{len(job_overrides) - 1}\n"
+        else:
+            array_flag = f"#SBATCH --array 0:{len(job_overrides) - 1}:{self.max_parallel_jobs}\n"
+        batch_script_header = self.batch_script_header + array_flag
+
         # Construct the switch case over different tasks
         batch_script_task_switch = "case ${SLURM_ARRAY_TASK_ID} in\n"
         for idx, overrides in enumerate(job_overrides):
@@ -93,7 +112,7 @@ class ScriptLauncher(Launcher):
         batch_script_task_switch += "esac\n"
 
         # Put together the batch script from its parts and write to sweep dir
-        batch_script = "\n\n".join([self.batch_script_header, self.pre_execute_command, batch_script_task_switch])
+        batch_script = "\n".join([batch_script_header, self.pre_execute_command, batch_script_task_switch])
         num_previous_batch_scripts = len(list(sweep_dir.glob("batch_script_*.sh")))
         batch_script_path = sweep_dir / f"batch_script_{num_previous_batch_scripts}.sh"
         batch_script_path.write_text(batch_script)
