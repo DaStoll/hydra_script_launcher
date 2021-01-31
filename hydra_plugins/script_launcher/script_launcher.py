@@ -95,9 +95,9 @@ class ScriptLauncher(Launcher):
 
         # Add task array flag to header
         if self.max_parallel_jobs is None:
-            array_flag = f"#SBATCH --array 0:{len(job_overrides) - 1}\n"
+            array_flag = f"#SBATCH --array 0-{len(job_overrides) - 1}\n"
         else:
-            array_flag = f"#SBATCH --array 0:{len(job_overrides) - 1}%{self.max_parallel_jobs}\n"
+            array_flag = f"#SBATCH --array 0-{len(job_overrides) - 1}%{self.max_parallel_jobs}\n"
         batch_script_header = self.batch_script_header + array_flag
 
         # Construct the switch case over different tasks
