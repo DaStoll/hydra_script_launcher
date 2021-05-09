@@ -24,6 +24,7 @@ class LauncherConfig:
         "hydra_plugins.script_launcher.script_launcher.ScriptLauncher"
     )
     batch_script_template: str = "???"
+    pre_command: Optional[str] = None
 
 
 ConfigStore.instance().store(
@@ -32,11 +33,12 @@ ConfigStore.instance().store(
 
 
 class ScriptLauncher(Launcher):
-    def __init__(self, batch_script_template: str, **kwargs) -> None:
+    def __init__(self, batch_script_template: str, pre_command: str = None, **kwargs) -> None:
         self.config: Optional[DictConfig] = None
         self.config_loader: Optional[ConfigLoader] = None
         self.task_function: Optional[TaskFunction] = None
 
+        self.pre_command = pre_command
         self.batch_script_template = batch_script_template
 
     def setup(
@@ -60,9 +62,9 @@ class ScriptLauncher(Launcher):
         sweep_dir.mkdir(parents=True, exist_ok=True)
         log.info(f"Sweep output dir : {sweep_dir}")
 
-        # Make sure cluster output/error folder exists
-
-        # Add task array flag to header
+        # Run pre command, e.g., to make sure cluster output/error folder exists
+        if self.pre_command is not None:
+            subprocess.run(self.pre_command.split(" "))
 
         # Construct args list
         args_list = "ARGS=(\n"
