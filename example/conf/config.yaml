@@ -20,7 +20,7 @@ hydra:
       #SBATCH --partition ${cluster.partition}
       <PUT_ARGS>
       conda activate script
-      python example/my_app.py ${ARGS[$SLURM_ARRAY_TASK_ID}}
+      python example/my_app.py ${ARGS[$SLURM_ARRAY_TASK_ID]}
   sweep:
     dir: multirun/${now:%Y-%m-%d_%H:%M}
     subdir: ${some_argument}
