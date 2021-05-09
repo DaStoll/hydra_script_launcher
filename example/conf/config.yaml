@@ -1,16 +1,25 @@
 defaults:
   - hydra/launcher: script
 
+some_argument: 1
+
+cluster:
+  partition: ml
+  max_array_tasks: 100
+
 hydra:
   launcher:
-    pre_execute_command: source ~/.conda/bin/activate htaa
-    execute_command: python example/my_app.py
-    time: 0-02:00
-    cpus_per_task: 1
-    gpus: 0
-    mem_per_cpu: 8000
-    job_name: test
-    partition: test
-    max_parallel_jobs: 100
-    error: ${hydra.sweep.dir}/cluster_oe/%A_%x_%t.oe
-    output: ${hydra.sweep.dir}/cluster_oe/%A_%x_%t.oe
+    batch_script_template: |
+      #!/bin/bash
+      #SBATCH --time 0-02:00
+      #SBATCH --cpus-per-task 1
+      #SBATCH --gres=gpus:0
+      #SBATCH --mem-per-cpu=8000
+      #SBATCH --job-name test
+      #SBATCH --output multirun/2021-05-09/03-01-07/cluster_oe/%A_%x_%t.oe
+      #SBATCH --error multirun/2021-05-09/03-01-07/cluster_oe/%A_%x_%t.oe
+      #SBATCH --array 0-<PUT_NUM_ARGS>%${cluster.max_array_tasks}
+      #SBATCH --partition ${cluster.partition}
+      <PUT_ARGS>
+      conda activate script
+      python example/my_app.py ${ARGS[$SLURM_ARRAY_TASK_ID}}
